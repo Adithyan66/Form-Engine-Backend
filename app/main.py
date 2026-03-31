@@ -1,6 +1,7 @@
+import asyncio
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
@@ -16,14 +17,17 @@ app.add_middleware(
 
 app.include_router(router)
 
-# Mount Slack endpoints only when Slack credentials are configured
-if os.environ.get("SLACK_BOT_TOKEN") and os.environ.get("SLACK_SIGNING_SECRET"):
-    from app.slack.bot import slack_handler
+# Start Slack Socket Mode when credentials are configured
+if os.environ.get("SLACK_BOT_TOKEN") and os.environ.get("SLACK_APP_TOKEN"):
+    from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+    from app.slack.bot import slack_app
 
-    @app.post("/slack/events")
-    async def slack_events(request: Request):
-        """Slack Events API and Interactivity endpoint."""
-        return await slack_handler.handle(request)
+    @app.on_event("startup")
+    async def start_slack_socket_mode():
+        handler = AsyncSocketModeHandler(
+            slack_app, os.environ["SLACK_APP_TOKEN"]
+        )
+        asyncio.create_task(handler.start_async())
 
 
 if __name__ == "__main__":

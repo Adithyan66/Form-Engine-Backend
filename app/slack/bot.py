@@ -4,7 +4,6 @@ import os
 import re
 
 from slack_bolt.async_app import AsyncApp
-from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 
 from app.slack.handler import (
     get_available_forms,
@@ -21,10 +20,7 @@ from app.storage import read_json
 
 slack_app = AsyncApp(
     token=os.environ.get("SLACK_BOT_TOKEN", ""),
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET", ""),
 )
-
-slack_handler = AsyncSlackRequestHandler(slack_app)
 
 
 # --- Event: Direct message ---
@@ -34,6 +30,8 @@ async def handle_message(event, say):
     """Handle incoming DMs or channel messages."""
     user_id = event.get("user")
     text = (event.get("text") or "").strip()
+
+    print(f"[Slack] Message from user {user_id}: {text}")
 
     # Ignore bot messages, message_changed, etc.
     if not user_id or event.get("bot_id") or event.get("subtype"):
