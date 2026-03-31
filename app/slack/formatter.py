@@ -60,8 +60,8 @@ def format_response(response):
                     "action_id": f"suggestion_select_{field_id}",
                     "options": [
                         {
-                            "text": {"type": "plain_text", "text": opt[:75]},
-                            "value": opt,
+                            "text": {"type": "plain_text", "text": opt["text"][:75]},
+                            "value": opt["value"],
                         }
                         for opt in options[:100]  # Slack max 100 options
                     ],
@@ -82,11 +82,11 @@ def format_response(response):
                             "type": "button",
                             "text": {
                                 "type": "plain_text",
-                                "text": opt[:75],
+                                "text": opt["text"][:75],
                                 "emoji": True,
                             },
                             "action_id": f"suggestion_{field_id}_{i + j}",
-                            "value": opt,
+                            "value": opt["value"],
                         }
                         for j, opt in enumerate(chunk)
                     ],

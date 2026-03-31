@@ -271,10 +271,14 @@ def get_suggestions(form, collected_data, missing_fields, invalid_fields=None, c
             continue
         valid_opts = get_valid_dropdown_values(form, fid, collected_data)
         if valid_opts:
+            label = field["label"]
             suggestions.append({
                 "field_id": fid,
-                "label": field["label"],
-                "options": valid_opts,
+                "label": label,
+                "options": [
+                    {"text": opt, "value": f"change {label.lower()} to {opt}"}
+                    for opt in valid_opts
+                ],
             })
 
     return suggestions

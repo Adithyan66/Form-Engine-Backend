@@ -255,6 +255,8 @@ def sanitize(state: FormState) -> dict:
                             f"{', '.join(valid_opts)}. To change {label}, first remove or "
                             f"update {', '.join(constraining)}."
                         )
+                        dropped.append({"field": label, "value": val, "reason": reason, "needs_resolution": True})
+                        continue
 
                     # Check parent context
                     if not reason:
@@ -441,8 +443,8 @@ def respond_empty(state: FormState) -> dict:
 
     # Nudge — pass dropped_fields so LLM can explain WHY values were rejected
     dropped_fields = state.get("dropped_fields", [])
-    # If any dropped value exists elsewhere in hierarchy, don't ask next question — let user resolve conflict
-    has_elsewhere = any(d.get("exists_elsewhere") for d in dropped_fields)
+    # If any dropped value needs user action to resolve, don't ask next question — let user resolve conflict
+    has_elsewhere = any(d.get("exists_elsewhere") or d.get("needs_resolution") for d in dropped_fields)
     nudge_msg = call_openai_nudge_message(
         state["user_message"], form, collected_data,
         currently_asking=currently_asking,
