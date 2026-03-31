@@ -484,16 +484,17 @@ TONE:
 
 # === Nudge (uncertain input) ===
 
-def call_openai_nudge_message(user_message, form, collected_data, currently_asking=None, currently_asking_field=None, dropped_fields=None, messages_history=None):
+def call_openai_nudge_message(user_message, form, collected_data, currently_asking=None, currently_asking_field=None, dropped_fields=None, messages_history=None, skip_next_question=False):
     """Generate a helpful message when the system couldn't process the user's input.
     Includes context about WHY specific values were rejected.
+    If skip_next_question=True, don't ask for the next field — wait for user to resolve conflict.
     """
-    print(f"    [llm] call_openai_nudge_message (currently_asking={currently_asking})")
+    print(f"    [llm] call_openai_nudge_message (currently_asking={currently_asking}, skip_next_question={skip_next_question})")
     print(f"    [llm]   dropped_fields: {dropped_fields}")
     form_prompt = _get_form_prompt(form)
 
     asking_info = ""
-    if currently_asking and currently_asking_field:
+    if not skip_next_question and currently_asking and currently_asking_field:
         label = currently_asking_field.get("label", currently_asking)
         ftype = currently_asking_field.get("type", "text")
         asking_info = f'We were asking for: "{label}" (type: {ftype})'
@@ -519,6 +520,14 @@ def call_openai_nudge_message(user_message, form, collected_data, currently_aski
             dropped_lines.append(f'- Tried to set {d["field"]}: "{d["value"]}" → Rejected because: {d["reason"]}')
         dropped_context = f"\n\nREJECTED VALUES (explain these to the user):\n" + "\n".join(dropped_lines)
 
+    # Build next-question instruction based on skip_next_question flag
+    if skip_next_question:
+        next_question_instruction = """3. Do NOT ask for any next field. The user needs to resolve this conflict first.
+   - Just explain where the value is available and what they'd need to change
+   - Wait for the user to decide what to do"""
+    else:
+        next_question_instruction = "3. Then re-ask for the field we need, with helpful hints"
+
     system_prompt = f"""You are a warm, helpful form assistant. The user provided input that couldn't be processed.
 
 Form: {form['title']}
@@ -535,8 +544,9 @@ Generate a friendly response that:
 1. If values were REJECTED: explain WHY each was rejected using the reasons above.
    - For hierarchy rejections: explain which parent selection limits the choices
    - Show the available alternatives naturally
+   - If the rejection mentions the value is available elsewhere, clearly explain WHERE and WHAT needs to change (mention the highest-level field that conflicts first)
 2. Acknowledge the user's intent (don't dismiss what they tried to do)
-3. Then re-ask for the field we need, with helpful hints
+{next_question_instruction}
 4. Keep it concise — max 3-4 sentences total
 
 LANGUAGE:

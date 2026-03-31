@@ -4,7 +4,9 @@ from app.hierarchy import (
     get_field,
     has_options,
     get_all_descendant_field_ids,
+    get_all_ancestor_field_ids,
     get_valid_dropdown_values,
+    find_value_in_hierarchy,
 )
 from app.validation import (
     validate_field,
@@ -267,6 +269,66 @@ def sanitize(state: FormState) -> dict:
                     if not reason:
                         reason = f"'{val}' is not a valid {label}. Available: {', '.join(valid_opts)}"
 
+                    # Check if value exists elsewhere in the hierarchy
+                    all_hierarchy_matches = find_value_in_hierarchy(form, val)
+                    field_matches = [m for m in all_hierarchy_matches if m["field_id"] == fid]
+
+                    if field_matches:
+                        # Get ancestors ordered root → ... → immediate parent
+                        ancestors = get_all_ancestor_field_ids(form, fid)
+                        ancestors.reverse()
+
+                        elsewhere = []
+                        for match in field_matches:
+                            parents = match["parents"]
+                            # Find the highest ancestor that conflicts with collected_data
+                            highest_conflict = None
+                            for anc_fid in ancestors:
+                                collected_val = collected_data.get(anc_fid) or check_context.get(anc_fid)
+                                if collected_val and anc_fid in parents:
+                                    if collected_val.lower() != parents[anc_fid].lower():
+                                        anc_field = get_field(form, anc_fid)
+                                        highest_conflict = {
+                                            "field_label": anc_field["label"] if anc_field else anc_fid,
+                                            "current_value": collected_val,
+                                            "needed_value": parents[anc_fid],
+                                        }
+                                        break
+
+                            if highest_conflict:
+                                # Build path for this match
+                                path_parts = []
+                                for anc_fid in ancestors:
+                                    if anc_fid in parents:
+                                        anc_field = get_field(form, anc_fid)
+                                        anc_label = anc_field["label"] if anc_field else anc_fid
+                                        path_parts.append(f"{anc_label}: {parents[anc_fid]}")
+                                elsewhere.append({
+                                    "path": ", ".join(path_parts),
+                                    "highest_conflict": highest_conflict,
+                                })
+
+                        if elsewhere:
+                            avail_lines = []
+                            for e in elsewhere:
+                                hc = e["highest_conflict"]
+                                avail_lines.append(
+                                    f"{e['path']} — you'd need to change {hc['field_label']} from '{hc['current_value']}' to '{hc['needed_value']}'"
+                                )
+                            reason = (
+                                f"'{val}' is not available under your current selections. "
+                                f"However, {val} is available in:\n"
+                                + "\n".join(f"- {line}" for line in avail_lines)
+                                + f"\n\nTo use {val}, change the highest-level conflicting field first."
+                            )
+                            dropped.append({"field": label, "value": val, "reason": reason, "exists_elsewhere": True})
+                            continue
+                    else:
+                        # Value doesn't exist anywhere in the hierarchy
+                        reason = f"'{val}' doesn't exist anywhere in the available options."
+                        if valid_opts:
+                            reason += f" Available {label.lower()} options for your current selection: {', '.join(valid_opts)}"
+
                     dropped.append({"field": label, "value": val, "reason": reason})
                     continue
             else:
@@ -379,12 +441,15 @@ def respond_empty(state: FormState) -> dict:
 
     # Nudge — pass dropped_fields so LLM can explain WHY values were rejected
     dropped_fields = state.get("dropped_fields", [])
+    # If any dropped value exists elsewhere in hierarchy, don't ask next question — let user resolve conflict
+    has_elsewhere = any(d.get("exists_elsewhere") for d in dropped_fields)
     nudge_msg = call_openai_nudge_message(
         state["user_message"], form, collected_data,
         currently_asking=currently_asking,
         currently_asking_field=currently_asking_field,
         dropped_fields=dropped_fields,
         messages_history=messages,
+        skip_next_question=has_elsewhere,
     )
     return {
         "response_msg": _with_query(query_answer, nudge_msg),
