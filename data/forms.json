@@ -74,234 +74,6 @@
         }
       },
       {
-        "field_id": "country",
-        "label": "Country",
-        "type": "dropdown",
-        "required": true,
-        "dropdown_options": [
-            {
-              "value": "India",
-              "children": {
-                "field_id": "state",
-                "options": [
-                  {
-                    "value": "Kerala",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Alappuzha",
-                          "children": {
-                            "field_id": "ward",
-                            "options": [
-                              {
-                                "value": "Ward1"
-                              },
-                              {
-                                "value": "Ward10"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "value": "Ernakulam"
-                        },
-                        {
-                          "value": "Thiruvananthapuram"
-                        },
-                        {
-                          "value": "Kottayam"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "Tamil Nadu",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Chennai",
-                          "children": {
-                            "field_id": "ward",
-                            "options": [
-                              {
-                                "value": "Ward45"
-                              },
-                              {
-                                "value": "Ward46"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "value": "Coimbatore"
-                        },
-                        {
-                          "value": "Madurai"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "Karnataka",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Bangalore"
-                        },
-                        {
-                          "value": "Mysore"
-                        },
-                        {
-                          "value": "Mangalore"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "value": "United States",
-              "children": {
-                "field_id": "state",
-                "options": [
-                  {
-                    "value": "New York",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Manhattan",
-                          "children": {
-                            "field_id": "ward",
-                            "options": [
-                              {
-                                "value": "Ward1"
-                              },
-                              {
-                                "value": "Ward2"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "value": "Brooklyn"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "New Jersey",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Newark",
-                          "children": {
-                            "field_id": "ward",
-                            "options": [
-                              {
-                                "value": "Ward1"
-                              },
-                              {
-                                "value": "Ward2"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "value": "Jersey City"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "California",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Los Angeles"
-                        },
-                        {
-                          "value": "San Francisco"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "value": "United Kingdom",
-              "children": {
-                "field_id": "state",
-                "options": [
-                  {
-                    "value": "England",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "London",
-                          "children": {
-                            "field_id": "ward",
-                            "options": [
-                              {
-                                "value": "WardA"
-                              },
-                              {
-                                "value": "WardB"
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "value": "Manchester"
-                        },
-                        {
-                          "value": "Birmingham"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "Scotland",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Glasgow"
-                        },
-                        {
-                          "value": "Edinburgh"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "value": "Wales",
-                    "children": {
-                      "field_id": "district",
-                      "options": [
-                        {
-                          "value": "Cardiff"
-                        },
-                        {
-                          "value": "Swansea"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-      },
-      {
         "field_id": "card_type",
         "label": "Card Type",
         "type": "dropdown",
@@ -419,6 +191,234 @@
         "required": true,
         "parent_field_id": "card_network",
         "dropdown_options": []
+      },
+      {
+        "field_id": "country",
+        "label": "Country",
+        "type": "dropdown",
+        "required": true,
+        "dropdown_options": [
+          {
+            "value": "India",
+            "children": {
+              "field_id": "state",
+              "options": [
+                {
+                  "value": "Kerala",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Alappuzha",
+                        "children": {
+                          "field_id": "ward",
+                          "options": [
+                            {
+                              "value": "Ward1"
+                            },
+                            {
+                              "value": "Ward10"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": "Ernakulam"
+                      },
+                      {
+                        "value": "Thiruvananthapuram"
+                      },
+                      {
+                        "value": "Kottayam"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "Tamil Nadu",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Chennai",
+                        "children": {
+                          "field_id": "ward",
+                          "options": [
+                            {
+                              "value": "Ward45"
+                            },
+                            {
+                              "value": "Ward46"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": "Coimbatore"
+                      },
+                      {
+                        "value": "Madurai"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "Karnataka",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Bangalore"
+                      },
+                      {
+                        "value": "Mysore"
+                      },
+                      {
+                        "value": "Mangalore"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "value": "United States",
+            "children": {
+              "field_id": "state",
+              "options": [
+                {
+                  "value": "New York",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Manhattan",
+                        "children": {
+                          "field_id": "ward",
+                          "options": [
+                            {
+                              "value": "Ward1"
+                            },
+                            {
+                              "value": "Ward2"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": "Brooklyn"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "New Jersey",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Newark",
+                        "children": {
+                          "field_id": "ward",
+                          "options": [
+                            {
+                              "value": "Ward1"
+                            },
+                            {
+                              "value": "Ward2"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": "Jersey City"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "California",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Los Angeles"
+                      },
+                      {
+                        "value": "San Francisco"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "value": "United Kingdom",
+            "children": {
+              "field_id": "state",
+              "options": [
+                {
+                  "value": "England",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "London",
+                        "children": {
+                          "field_id": "ward",
+                          "options": [
+                            {
+                              "value": "WardA"
+                            },
+                            {
+                              "value": "WardB"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": "Manchester"
+                      },
+                      {
+                        "value": "Birmingham"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "Scotland",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Glasgow"
+                      },
+                      {
+                        "value": "Edinburgh"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "value": "Wales",
+                  "children": {
+                    "field_id": "district",
+                    "options": [
+                      {
+                        "value": "Cardiff"
+                      },
+                      {
+                        "value": "Swansea"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
       },
       {
         "field_id": "state",
