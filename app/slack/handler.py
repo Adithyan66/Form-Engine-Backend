@@ -37,10 +37,11 @@ def select_form(user_id, form_id):
     write_json("messages.json", [], user_id=user_id)
 
     missing = get_missing_fields(form, {})
-    question = call_openai_next_question(form, {}, missing)
+    nq = call_openai_next_question(form, {}, missing)
+    question = nq["message"]
+    asking = nq.get("asking_field_id")
 
-    first_asking, _ = get_currently_asking(form, {})
-    write_json("currently_asking.json", {"field_id": first_asking}, user_id=user_id)
+    write_json("currently_asking.json", {"field_id": asking}, user_id=user_id)
 
     messages = [{"role": "assistant", "content": question}]
     write_json("messages.json", messages, user_id=user_id)
@@ -51,7 +52,7 @@ def select_form(user_id, form_id):
         "collected_data": {},
         "missing_fields": missing,
         "invalid_fields": [],
-        "suggestions": get_suggestions(form, {}, missing, currently_asking=first_asking),
+        "suggestions": get_suggestions(form, {}, missing, currently_asking=asking),
     }
 
 
@@ -95,6 +96,7 @@ def process_message(user_id, message):
         "dropped_fields": [],
         "response_msg": "",
         "status": "pending",
+        "llm_asking_field": None,
         "result": None,
     }
 
@@ -110,11 +112,13 @@ def process_message(user_id, message):
     messages.append({"role": "assistant", "content": response_msg})
     write_json("messages.json", messages, user_id=user_id)
 
-    fid, _ = get_currently_asking(form, collected_data)
-    write_json("currently_asking.json", {"field_id": fid}, user_id=user_id)
-
     missing = get_missing_fields(form, collected_data)
-    new_asking, _ = get_currently_asking(form, collected_data)
+    llm_asking = final_state.get("llm_asking_field")
+    # If LLM returned an invalid field_id, show no suggestions
+    if llm_asking and llm_asking not in missing:
+        llm_asking = None
+
+    write_json("currently_asking.json", {"field_id": llm_asking}, user_id=user_id)
 
     result = {
         "status": status,
@@ -122,7 +126,7 @@ def process_message(user_id, message):
         "collected_data": _mask_sensitive(form, collected_data),
         "missing_fields": missing,
         "invalid_fields": invalid_fields,
-        "suggestions": get_suggestions(form, collected_data, missing, currently_asking=new_asking),
+        "suggestions": get_suggestions(form, collected_data, missing, currently_asking=llm_asking),
     }
 
     all_conflicts = final_state.get("all_conflicts", [])

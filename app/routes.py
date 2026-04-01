@@ -66,9 +66,10 @@ def select_form(req: SelectFormRequest):
     write_json("messages.json", [], user_id=WEB_USER)
 
     missing = get_missing_fields(form, {})
-    question = call_openai_next_question(form, {}, missing)
+    nq = call_openai_next_question(form, {}, missing)
+    question = nq["message"]
+    asking = nq.get("asking_field_id")
 
-    first_asking, _ = get_currently_asking(form, {})
     _save_currently_asking(form, {}, user_id=WEB_USER)
 
     messages = [{"role": "assistant", "content": question}]
@@ -80,7 +81,7 @@ def select_form(req: SelectFormRequest):
         "collected_data": {},
         "missing_fields": missing,
         "invalid_fields": [],
-        "suggestions": get_suggestions(form, {}, missing, currently_asking=first_asking),
+        "suggestions": get_suggestions(form, {}, missing, currently_asking=asking),
     }
 
 
@@ -136,6 +137,7 @@ def chat(req: ChatRequest):
         "dropped_fields": [],
         "response_msg": "",
         "status": "pending",
+        "llm_asking_field": None,
         "result": None,
     }
 
@@ -153,9 +155,12 @@ def chat(req: ChatRequest):
     write_json("messages.json", messages, user_id=WEB_USER)
     _save_currently_asking(form, collected_data, user_id=WEB_USER)
 
-    # Build response
+    # Build response — suggestions sync with what the LLM actually asked about
     missing = get_missing_fields(form, collected_data)
-    new_asking, _ = get_currently_asking(form, collected_data)
+    llm_asking = final_state.get("llm_asking_field")
+    # If LLM returned an invalid field_id, show no suggestions
+    if llm_asking and llm_asking not in missing:
+        llm_asking = None
 
     result = {
         "status": status,
@@ -163,7 +168,7 @@ def chat(req: ChatRequest):
         "collected_data": _mask_sensitive(form, collected_data),
         "missing_fields": missing,
         "invalid_fields": invalid_fields,
-        "suggestions": get_suggestions(form, collected_data, missing, currently_asking=new_asking),
+        "suggestions": get_suggestions(form, collected_data, missing, currently_asking=llm_asking),
     }
 
     all_conflicts = final_state.get("all_conflicts", [])

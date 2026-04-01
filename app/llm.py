@@ -232,11 +232,11 @@ QUESTION_RULES = """YOUR RESPONSE MUST FOLLOW THIS STRUCTURE:
    - ONE short sentence max
 
 2. REJECTED VALUES (MANDATORY — do NOT skip this):
-   - If LAST ACTION contains any REJECTED items, you MUST mention them
+   - ONLY if LAST ACTION contains REJECTED items, mention them
    - Explain briefly why each was rejected
    - Show valid alternatives if provided
-   - Example: "However, Ward2 isn't available for Alappuzha — you can choose from Ward1 or Ward6."
-   - NEVER silently skip rejected values
+   - If LAST ACTION has NO rejected items, do NOT mention any rejections at all
+   - NEVER invent or fabricate rejection messages from examples or field context
 
 3. ASK THE NEXT QUESTION:
    - Ask for ONE field only
@@ -281,7 +281,7 @@ def call_openai_next_question(form, collected_data, missing_fields, last_action=
             fields_info.append(info)
 
     if not fields_info:
-        return "All fields have been collected!"
+        return {"message": "All fields have been collected!", "asking_field_id": None}
 
     # Build last action context
     action_context = ""
@@ -346,7 +346,9 @@ IMPORTANT:
 - Do NOT fabricate or invent rejection messages. If LAST ACTION does not contain any REJECTED items, do NOT say anything was rejected or invalid. All stored values are already validated and correct — do not question them.
 - If a field was successfully stored (in LAST ACTION "stored" or in "Already collected"), it passed all validation. Do NOT warn the user about it.
 
-Return ONLY the message text."""
+Return a JSON object with exactly two keys:
+- "message": the response text (acknowledgment + question)
+- "asking_field_id": the field_id of the field you are asking about (must be one of the missing field_ids listed above)"""
 
     # Build messages with conversation history for continuity
     llm_messages = [{"role": "system", "content": system_prompt}]
@@ -359,9 +361,20 @@ Return ONLY the message text."""
         model="gpt-4o-mini",
         messages=llm_messages,
         temperature=0.7,
+        response_format={"type": "json_object"},
     )
 
-    return response.choices[0].message.content.strip()
+    try:
+        result = json.loads(response.choices[0].message.content)
+        return {
+            "message": result.get("message", "").strip(),
+            "asking_field_id": result.get("asking_field_id"),
+        }
+    except (json.JSONDecodeError, AttributeError):
+        return {
+            "message": response.choices[0].message.content.strip(),
+            "asking_field_id": None,
+        }
 
 
 # === Error Message ===

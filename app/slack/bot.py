@@ -15,12 +15,39 @@ from app.slack.formatter import (
     format_response,
     build_form_selection_blocks,
     build_reset_confirmation_blocks,
+    build_home_tab_blocks,
+    build_home_tab_no_form_blocks,
 )
+from app.validation import get_missing_fields
 from app.storage import read_json
 
 slack_app = AsyncApp(
     token=os.environ.get("SLACK_BOT_TOKEN", ""),
 )
+
+
+# --- Event: Home Tab opened ---
+
+@slack_app.event("app_home_opened")
+async def handle_home_tab(client, event):
+    """Publish the Home Tab view when the user opens it."""
+    user_id = event["user"]
+
+    form = read_json("active_form.json", user_id=user_id)
+
+    if not form:
+        forms = get_available_forms()
+        blocks = build_home_tab_no_form_blocks(forms)
+    else:
+        collected_data = read_json("collected_data.json", user_id=user_id)
+        missing = get_missing_fields(form, collected_data)
+        status = "complete" if not missing else "pending"
+        blocks = build_home_tab_blocks(form, collected_data, missing, status)
+
+    await client.views_publish(
+        user_id=user_id,
+        view={"type": "home", "blocks": blocks},
+    )
 
 
 # --- Event: Direct message ---
@@ -65,7 +92,7 @@ async def handle_message(event, say):
         return
 
     blocks = format_response(response)
-    await say(blocks=blocks, text=response.get("message", ""))
+    await say(blocks=blocks, text=response.get("message") or "Here's the update.")
 
 
 # --- Event: App mention in channels ---
@@ -90,7 +117,7 @@ async def handle_form_selection(ack, body, say):
 
     response = await select_form_async(user_id, form_id)
     blocks = format_response(response)
-    await say(blocks=blocks, text=response.get("message", ""))
+    await say(blocks=blocks, text=response.get("message") or "Form selected.")
 
 
 # --- Action: Suggestion button click ---
@@ -109,4 +136,4 @@ async def handle_suggestion_click(ack, body, say):
         return
 
     blocks = format_response(response)
-    await say(blocks=blocks, text=response.get("message", ""))
+    await say(blocks=blocks, text=response.get("message") or "Here's the update.")

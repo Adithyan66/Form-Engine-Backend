@@ -148,3 +148,102 @@ def build_reset_confirmation_blocks():
             },
         },
     ]
+
+
+def build_home_tab_blocks(form, collected_data, missing_fields, status):
+    """Build Block Kit blocks for the Slack Home Tab showing form progress."""
+    blocks = []
+
+    # Header
+    blocks.append({
+        "type": "header",
+        "text": {"type": "plain_text", "text": form.get("title", "Form"), "emoji": True},
+    })
+
+    # Status line
+    total = len(form.get("fields", []))
+    filled = total - len(missing_fields)
+    if status == "complete":
+        status_text = ":white_check_mark: *Complete* — All fields filled!"
+    else:
+        status_text = f":pencil2: *In Progress* — {filled}/{total} fields filled"
+
+    blocks.append({
+        "type": "section",
+        "text": {"type": "mrkdwn", "text": status_text},
+    })
+    blocks.append({"type": "divider"})
+
+    # Field-label lookup
+    field_map = {f["field_id"]: f["label"] for f in form.get("fields", [])}
+
+    # Collected values
+    if collected_data:
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "*Collected Values*"},
+        })
+        for field_id, value in collected_data.items():
+            label = field_map.get(field_id, field_id)
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*{label}:*  {value}"},
+            })
+    else:
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "_No values collected yet. Start chatting with the bot!_"},
+        })
+
+    # Missing fields (only when in progress)
+    if missing_fields and status != "complete":
+        blocks.append({"type": "divider"})
+        missing_labels = [field_map.get(fid, fid) for fid in missing_fields]
+        blocks.append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Remaining:*  " + ", ".join(missing_labels),
+            },
+        })
+
+    return blocks
+
+
+def build_home_tab_no_form_blocks(forms):
+    """Build Home Tab blocks when no active form exists."""
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": "Welcome!", "emoji": True},
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "No active form. Select one below or send me a message to get started.",
+            },
+        },
+        {"type": "divider"},
+    ]
+
+    if forms:
+        blocks.append({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": f["title"][:75],
+                        "emoji": True,
+                    },
+                    "action_id": f"select_form_{f['form_id']}",
+                    "value": f["form_id"],
+                    "style": "primary",
+                }
+                for f in forms
+            ],
+        })
+
+    return blocks

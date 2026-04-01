@@ -380,7 +380,9 @@ def respond_empty(state: FormState) -> dict:
     if query_answer and not deleted_labels:
         missing = get_missing_fields(form, collected_data)
         if missing:
-            msg = _with_query(query_answer, call_openai_next_question(form, collected_data, missing, messages_history=messages))
+            nq = call_openai_next_question(form, collected_data, missing, messages_history=messages)
+            msg = _with_query(query_answer, nq["message"])
+            return {"response_msg": msg, "status": "pending", "llm_asking_field": nq.get("asking_field_id")}
         else:
             msg = _with_query(query_answer, "All information has been collected. Thank you!")
         return {"response_msg": msg, "status": "pending" if missing else "complete"}
@@ -390,7 +392,9 @@ def respond_empty(state: FormState) -> dict:
         missing = get_missing_fields(form, collected_data)
         last_action = {"deleted": deleted_labels}
         if missing:
-            msg = _with_query(query_answer, call_openai_next_question(form, collected_data, missing, last_action=last_action, messages_history=messages))
+            nq = call_openai_next_question(form, collected_data, missing, last_action=last_action, messages_history=messages)
+            msg = _with_query(query_answer, nq["message"])
+            return {"response_msg": msg, "status": "pending", "llm_asking_field": nq.get("asking_field_id")}
         else:
             msg = _with_query(query_answer, "All information has been collected. Thank you!")
         return {"response_msg": msg, "status": "pending" if missing else "complete"}
@@ -424,20 +428,20 @@ def respond_empty(state: FormState) -> dict:
                 if missing:
                     remaining = [f for f in missing if f != currently_asking]
                     if remaining:
-                        msg = call_openai_next_question(form, collected_data, remaining, messages_history=messages)
-                        return {"response_msg": f"No problem, skipping {label}.\n\n{msg}", "status": "pending"}
+                        nq = call_openai_next_question(form, collected_data, remaining, messages_history=messages)
+                        return {"response_msg": f"No problem, skipping {label}.\n\n{nq['message']}", "status": "pending", "llm_asking_field": nq.get("asking_field_id")}
                 return {"response_msg": f"Skipped {label}. All other fields have been collected. Thank you!", "status": "complete"}
 
     if is_deny:
         if currently_asking and currently_asking_field:
             label = currently_asking_field.get("label", currently_asking)
-            msg = call_openai_next_question(form, collected_data, missing, messages_history=messages)
-            return {"response_msg": msg, "status": "pending"}
+            nq = call_openai_next_question(form, collected_data, missing, messages_history=messages)
+            return {"response_msg": nq["message"], "status": "pending", "llm_asking_field": nq.get("asking_field_id")}
 
     if is_confirm:
         if missing:
-            msg = call_openai_next_question(form, collected_data, missing, messages_history=messages)
-            return {"response_msg": msg, "status": "pending"}
+            nq = call_openai_next_question(form, collected_data, missing, messages_history=messages)
+            return {"response_msg": nq["message"], "status": "pending", "llm_asking_field": nq.get("asking_field_id")}
         else:
             return {"response_msg": "All information has been collected. Thank you!", "status": "complete"}
 
@@ -456,6 +460,7 @@ def respond_empty(state: FormState) -> dict:
     return {
         "response_msg": _with_query(query_answer, nudge_msg),
         "status": "pending",
+        "llm_asking_field": None if has_elsewhere else currently_asking,
     }
 
 
@@ -728,6 +733,7 @@ def handle_conflicts(state: FormState) -> dict:
         "clean_fields": clean_fields,
         "response_msg": response_msg,
         "status": "conflict" if all_conflicts else "pending",
+        "llm_asking_field": None,  # no next question during conflicts
     }
 
 
@@ -786,10 +792,12 @@ def commit(state: FormState) -> dict:
     if rejected:
         last_action["rejected"] = rejected
 
-    response_msg = _with_query(query_answer, call_openai_next_question(form, collected_data, missing, last_action=last_action, messages_history=state.get("messages", [])))
+    nq = call_openai_next_question(form, collected_data, missing, last_action=last_action, messages_history=state.get("messages", []))
+    response_msg = _with_query(query_answer, nq["message"])
 
     return {
         "collected_data": collected_data,
         "response_msg": response_msg,
         "status": "pending",
+        "llm_asking_field": nq.get("asking_field_id"),
     }

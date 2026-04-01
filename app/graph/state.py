@@ -39,4 +39,5 @@ class FormState(TypedDict):
     # Output
     response_msg: str
     status: str
+    llm_asking_field: str | None  # field_id the LLM chose to ask about (for synced suggestions)
     result: dict | None
