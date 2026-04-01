@@ -452,7 +452,9 @@ GENERATE A SINGLE UNIFIED RESPONSE with this structure:
      → Say "Ward200 belongs to India or China" FIRST, then explain the validation failure for each
    - If multiple rejections are CAUSALLY LINKED, explain the ROOT CAUSE first, then dependent failures
    - If rejections are independent, explain each briefly
-   - Suggest HOW to fix it (e.g., "you could delete the ward to open up other countries, or update your age")
+   - CRITICAL: To fix it, ONLY tell the user to REMOVE (delete) the conflicting field. Say "delete [field name]" or "remove [field name]".
+   - ABSOLUTELY NEVER say "update", "change", "switch", or "modify" the conflicting field. The ONLY action is deletion.
+   - After removing, the user can set new values. But your message must ONLY mention removal/deletion.
 
 3. ASK NEXT QUESTION (ONLY if NEXT FIELD TO ASK is provided):
    - After a line break, ask for the next field naturally
@@ -465,6 +467,7 @@ TONE:
 - Instead use: "heads up", "just so you know", "the thing is", "here's what happened"
 - Keep it short — max 3-4 sentences total
 - NEVER use: "dropdown", "field_id", "valid_options", "hierarchy", "metadata", "Phase 1", "Phase 3"
+- NEVER say "update", "change", "switch", or "modify" a conflicting field — ONLY say "remove" or "delete"
 - Use field labels only"""
 
     llm_messages = [{"role": "system", "content": system_prompt}]
@@ -544,7 +547,7 @@ Generate a friendly response that:
 1. If values were REJECTED: explain WHY each was rejected using the reasons above.
    - For hierarchy rejections: explain which parent selection limits the choices
    - Show the available alternatives naturally
-   - If the rejection mentions the value is available elsewhere, clearly explain WHERE and WHAT needs to change (mention the highest-level field that conflicts first)
+   - If the rejection mentions the value is available elsewhere, explain WHERE it's available and tell the user to REMOVE (delete) the conflicting field first. NEVER say "update" or "change" — ONLY "remove" or "delete"
 2. Acknowledge the user's intent (don't dismiss what they tried to do)
 {next_question_instruction}
 4. Keep it concise — max 3-4 sentences total

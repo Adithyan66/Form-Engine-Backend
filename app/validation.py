@@ -188,7 +188,7 @@ def validate_field(form, field_id, value, collected_data):
                         f"'{value}' is not valid for {field['label']} because you already selected "
                         f"{', '.join(constraining_fields)} which only belongs under "
                         f"{', '.join(valid_options)}. To change {field['label']}, "
-                        f"first update or remove {', '.join(constraining_fields)}."
+                        f"first remove {', '.join(constraining_fields)}."
                     )
                 else:
                     reason = f"'{value}' is not valid for {field['label']}. Valid options: {', '.join(valid_options)}"

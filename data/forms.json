@@ -496,5 +496,118 @@
         }
       }
     ]
-  }
+  },
+  {
+  "form_id": "dynamodb_table_creation_form",
+  "title": "DynamoDB Table Creation Form",
+  "system_prompt": "ABOUT THIS FORM: DynamoDB table creation form to capture required configuration for provisioning a table.\n\nFIELD GUIDE:\n- vendor: Cloud provider (default AWS)\n- geo_location: Deployment region grouping\n- product: Internal product using the table\n- environment: Deployment environment\n- table_name: Must follow AWS DynamoDB naming rules (3-255 chars, alphanumeric, _, -, .)\n- partition_key: Primary key attribute name\n- partition_key_type: DynamoDB attribute type (S, N, B)\n\nFUZZY MATCHING RULES:\n1. VENDOR: 'aws', 'amazon', 'amazon web services' → 'AWS'\n2. GEO: Case-insensitive matching — 'canada', 'london', 'mumbai', 'north america'\n3. PRODUCT: 'falcon', 'core' → normalize casing\n4. ENVIRONMENT: 'dev', 'stage', 'qa', 'prod' → normalize casing\n5. KEY TYPE: 'string'→'S', 'number'→'N', 'binary'→'B'\n6. MIXED INPUT: Extract multiple values — 'aws mumbai falcon prod users_table id string'\n7. SOFT CORRECTION: Fix casing but never invent values\n\nEXAMPLES:\n- Input: 'aws mumbai falcon prod users id string' → {\"vendor\":\"AWS\",\"geo_location\":\"Mumbai\",\"product\":\"Falcon\",\"environment\":\"Prod\",\"table_name\":\"users\",\"partition_key\":\"id\",\"partition_key_type\":\"S\"}\n- Input: 'core qa canada orders_table orderId number' → {\"product\":\"Core\",\"environment\":\"QA\",\"geo_location\":\"Canada\",\"table_name\":\"orders_table\",\"partition_key\":\"orderId\",\"partition_key_type\":\"N\"}\n\nTONE: Professional cloud infrastructure assistant.",
+  "fields": [
+    {
+      "field_id": "vendor",
+      "label": "Vendor / Provider",
+      "type": "dropdown",
+      "required": true,
+      "default": "AWS",
+      "dropdown_options": [
+        {
+          "value": "AWS"
+        }
+      ]
+    },
+    {
+      "field_id": "geo_location",
+      "label": "Geo Location",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "Canada"
+        },
+        {
+          "value": "London"
+        },
+        {
+          "value": "Mumbai"
+        },
+        {
+          "value": "North America"
+        }
+      ]
+    },
+    {
+      "field_id": "product",
+      "label": "Product",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "Falcon"
+        },
+        {
+          "value": "Core"
+        }
+      ]
+    },
+    {
+      "field_id": "environment",
+      "label": "Environment",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "Dev"
+        },
+        {
+          "value": "Stage"
+        },
+        {
+          "value": "QA"
+        },
+        {
+          "value": "Prod"
+        }
+      ]
+    },
+    {
+      "field_id": "table_name",
+      "label": "Table Name",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^[a-zA-Z0-9_.-]{3,255}$",
+        "regex_description": "3-255 characters, alphanumeric, underscore (_), hyphen (-), or dot (.)"
+      }
+    },
+    {
+      "field_id": "partition_key",
+      "label": "Partition Key",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "min_length": 1,
+        "max_length": 255
+      }
+    },
+    {
+      "field_id": "partition_key_type",
+      "label": "Partition Key Type",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "S",
+          "label": "String"
+        },
+        {
+          "value": "N",
+          "label": "Number"
+        },
+        {
+          "value": "B",
+          "label": "Binary"
+        }
+      ]
+    }
+  ]
+}
 ]

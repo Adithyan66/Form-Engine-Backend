@@ -252,8 +252,8 @@ def sanitize(state: FormState) -> dict:
                         reason = (
                             f"Cannot set {label} to '{val}' because you already selected "
                             f"{', '.join(constraining)} which only belongs under "
-                            f"{', '.join(valid_opts)}. To change {label}, first remove or "
-                            f"update {', '.join(constraining)}."
+                            f"{', '.join(valid_opts)}. To change {label}, first remove "
+                            f"{', '.join(constraining)}."
                         )
                         dropped.append({"field": label, "value": val, "reason": reason, "needs_resolution": True})
                         continue

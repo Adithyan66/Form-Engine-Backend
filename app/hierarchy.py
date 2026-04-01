@@ -318,8 +318,8 @@ def check_hierarchy_conflict(form, field_id, value, collected_data):
                 return False, (
                     f"Cannot set {field_label} to '{value}' because you already selected "
                     f"{desc_label}='{desc_val}', which does not belong under '{value}'. "
-                    f"To change {field_label}, first remove or update {desc_label} "
-                    f"(say 'delete {desc_label.lower()}' or 'change {desc_label.lower()} to ...')."
+                    f"To change {field_label}, first remove {desc_label} "
+                    f"(say 'delete {desc_label.lower()}')."
                 )
 
     return False, f"'{value}' is not valid for {field_label} given the current selections."
