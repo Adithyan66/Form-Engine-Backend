@@ -110,11 +110,19 @@ def process_message(user_id, message):
     messages.append({"role": "assistant", "content": response_msg})
     write_json("messages.json", messages, user_id=user_id)
 
-    fid, _ = get_currently_asking(form, collected_data)
-    write_json("currently_asking.json", {"field_id": fid}, user_id=user_id)
-
     missing = get_missing_fields(form, collected_data)
-    new_asking, _ = get_currently_asking(form, collected_data)
+
+    # When not asking a next question, set currently_asking to None so no suggestions appear
+    all_conflicts = final_state.get("all_conflicts", [])
+    dropped = final_state.get("dropped_fields", [])
+    has_unresolved = any(d.get("exists_elsewhere") or d.get("needs_resolution") for d in dropped)
+
+    if status in ("conflict", "complete") or all_conflicts or has_unresolved:
+        new_asking = None
+    else:
+        new_asking, _ = get_currently_asking(form, collected_data)
+
+    write_json("currently_asking.json", {"field_id": new_asking}, user_id=user_id)
 
     result = {
         "status": status,
