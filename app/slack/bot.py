@@ -71,7 +71,7 @@ async def _process_message_bg(client, channel, ts, user_id, text):
                 channel=channel,
                 ts=ts,
                 blocks=build_form_selection_blocks(forms),
-                text="Please select a form.",
+                text="Please select a service.",
             )
             return
         await _update_message(client, channel, ts, response)
@@ -142,7 +142,7 @@ async def handle_message(event, say, client):
         forms = get_available_forms()
         await say(
             blocks=build_form_selection_blocks(forms),
-            text="Please select a form.",
+            text="Please select a service.",
         )
         return
 

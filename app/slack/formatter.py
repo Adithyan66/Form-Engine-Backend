@@ -99,7 +99,7 @@ def format_response(response):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": ":white_check_mark: *Form completed!* All fields have been filled.",
+                "text": ":white_check_mark: *Service completed!* All fields have been filled.",
             },
         })
 
@@ -113,7 +113,7 @@ def build_form_selection_blocks(forms):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "Hello! :wave: I can help you fill out forms. Please select a form to get started:",
+                "text": "Hello! :wave: I can help you with our services. Please select a service to get started:",
             },
         },
         {
@@ -216,7 +216,7 @@ def build_home_tab_no_form_blocks(forms):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "No active form. Select one below or send me a message to get started.",
+                "text": "No active service. Select one below or send me a message to get started.",
             },
         },
         {"type": "divider"},

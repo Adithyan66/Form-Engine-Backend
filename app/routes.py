@@ -111,7 +111,7 @@ def chat(req: ChatRequest):
             form_list = ", ".join(f'"{f["title"]}"' for f in forms)
             return {
                 "status": "no_form",
-                "message": f"I'd be happy to help! We have these forms available: {form_list}. Which one would you like to fill out?",
+                "message": f"I'd be happy to help! We have these services available: {form_list}. Which one would you like to get started with?",
                 "collected_data": {},
                 "missing_fields": [],
                 "invalid_fields": [],

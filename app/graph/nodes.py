@@ -416,7 +416,7 @@ def respond_empty(state: FormState) -> dict:
             is_required = currently_asking_field.get("required", False)
             if is_required:
                 return {
-                    "response_msg": f"I'd love to let you skip, but {label} is required for this form. Could you please provide it?",
+                    "response_msg": f"I'd love to let you skip, but {label} is required for this service. Could you please provide it?",
                     "status": "pending",
                 }
             else:

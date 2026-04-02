@@ -30,7 +30,7 @@ def select_form(user_id, form_id):
     forms = read_json("forms.json")
     form = next((f for f in forms if f["form_id"] == form_id), None)
     if not form:
-        return {"status": "error", "message": "Form not found."}
+        return {"status": "error", "message": "Service not found."}
 
     write_json("active_form.json", form, user_id=user_id)
     write_json("collected_data.json", {}, user_id=user_id)

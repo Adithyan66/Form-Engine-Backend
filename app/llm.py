@@ -96,7 +96,7 @@ EXTRACTION_RULES = """RULES:
    - Email pattern (contains @ and domain) → email field
    - Phone pattern (7-15 digits, optional +) → phone field
    - Dropdown close match: if input closely matches a valid_option of ANY dropdown field (e.g., "saving" ≈ "Savings", "curren" ≈ "Current"), map to THAT dropdown field
-   - Known structured patterns defined in FORM CONTEXT (e.g., ward patterns) → respective field
+   - Known structured patterns defined in SERVICE CONTEXT (e.g., ward patterns) → respective field
    If input matches a high-confidence pattern, map it immediately. Do NOT force it to the currently asking field.
 
 2. BEST-FIT MATCHING (NOT currently-asking-first):
@@ -119,7 +119,7 @@ EXTRACTION_RULES = """RULES:
 
 5. FUZZY MATCHING:
    - Normalize casing and spacing to match known options
-   - Allow minor spelling variations for known values (defined in FORM CONTEXT)
+   - Allow minor spelling variations for known values (defined in SERVICE CONTEXT)
    - "kerla" → "Kerala", "banglore" → "Bangalore", "ward 200" → "Ward200"
    - ONLY fuzzy-match against values that EXIST in the form. NEVER invent new values
 
@@ -190,8 +190,8 @@ def call_openai_extract(user_message, form, collected_data, currently_asking=Non
 
     system_prompt = f"""You are a STRICT data extraction assistant.
 
-Form: {form['title']}
-{f"FORM CONTEXT: {form_prompt}" if form_prompt else ""}
+Service: {form['title']}
+{f"SERVICE CONTEXT: {form_prompt}" if form_prompt else ""}
 
 Fields:
 {fields_context}
@@ -329,9 +329,9 @@ def call_openai_next_question(form, collected_data, missing_fields, last_action=
         if parts:
             action_context = "\n\nLAST ACTION:\n" + "\n".join(f"- {p}" for p in parts)
 
-    system_prompt = f"""You are a warm , short , professional form assistant.
+    system_prompt = f"""You are a warm , short , professional service assistant.
 
-Form: {form['title']}
+Service: {form['title']}
 
 Already collected: {json.dumps(collected_data)}
 
@@ -430,9 +430,9 @@ def call_openai_error_message(form, field_errors, user_message, collected_data, 
         if parts:
             stored_context = "\n\nSUCCESSFULLY PROCESSED:\n" + "\n".join(f"- {p}" for p in parts)
 
-    system_prompt = f"""You are a friendly, concise form assistant. The user provided data, some of which was rejected.
+    system_prompt = f"""You are a friendly, concise service assistant. The user provided data, some of which was rejected.
 
-Form: {form['title']}
+Service: {form['title']}
 
 Already collected: {json.dumps(collected_data)}
 User said: "{user_message}"
@@ -531,10 +531,10 @@ def call_openai_nudge_message(user_message, form, collected_data, currently_aski
     else:
         next_question_instruction = "3. Then re-ask for the field we need, with helpful hints"
 
-    system_prompt = f"""You are a warm, helpful form assistant. The user provided input that couldn't be processed.
+    system_prompt = f"""You are a warm, helpful service assistant. The user provided input that couldn't be processed.
 
-Form: {form['title']}
-{f"FORM CONTEXT: {form_prompt}" if form_prompt else ""}
+Service: {form['title']}
+{f"SERVICE CONTEXT: {form_prompt}" if form_prompt else ""}
 
 Already collected: {json.dumps(collected_data)}
 
@@ -589,19 +589,19 @@ def call_openai_detect_form(user_message, forms):
         for f in forms
     )
 
-    system_prompt = f"""You are a form selection assistant. Based on the user's message, determine which form they want to fill out.
+    system_prompt = f"""You are a service selection assistant. Based on the user's message, determine which service they want to use.
 
-Available forms:
+Available services:
 {forms_list}
 
 RULES:
-1. Match the user's INTENT to the most relevant form
-2. Be flexible with phrasing — "create a dynamodb", "dynamodb table", "new table" → dynamodb form
-3. "open account", "bank account", "new account" → bank form
+1. Match the user's INTENT to the most relevant service
+2. Be flexible with phrasing — "create a dynamodb", "dynamodb table", "new table" → dynamodb service
+3. "open account", "bank account", "new account" → bank service
 4. Return ONLY a JSON object with one key: "form_id"
-5. If the user's message matches a form, return {{"form_id": "<matched_form_id>"}}
-6. If NO form matches or the message is ambiguous, return {{"form_id": null}}
-7. Be generous with matching — if the user mentions anything related to a form's domain, match it
+5. If the user's message matches a service, return {{"form_id": "<matched_form_id>"}}
+6. If NO service matches or the message is ambiguous, return {{"form_id": null}}
+7. Be generous with matching — if the user mentions anything related to a service's domain, match it
 
 Return ONLY a JSON object. No explanation."""
 
@@ -631,15 +631,15 @@ def call_openai_answer_query(query, form, collected_data):
     print(f"    [llm]   collected_data: {collected_data}")
     query_prompt = form.get("query_prompt", "")
 
-    system_prompt = f"""You are a helpful form assistant answering a user's question.
+    system_prompt = f"""You are a helpful service assistant answering a user's question.
 
-FULL FORM DEFINITION:
+FULL SERVICE DEFINITION:
 {json.dumps(form, indent=2)}
 
 ALREADY COLLECTED DATA:
 {json.dumps(collected_data, indent=2)}
 
-{f"FORM-SPECIFIC QUERY INSTRUCTIONS:{chr(10)}{query_prompt}" if query_prompt else ""}
+{f"SERVICE-SPECIFIC QUERY INSTRUCTIONS:{chr(10)}{query_prompt}" if query_prompt else ""}
 
 HOW TO ANSWER — follow these steps IN ORDER:
 
@@ -649,7 +649,7 @@ STEP 1: IDENTIFY ALL COLLECTED FIELDS THAT CONSTRAIN THE ANSWER
    - Also include fields connected through validation rules (e.g., age constrains country via conditional_rules)
 
 STEP 2: EXHAUSTIVE TRAVERSAL
-   - Walk through EVERY branch of the form definition to collect ALL possible values for the asked field
+   - Walk through EVERY branch of the service definition to collect ALL possible values for the asked field
    - Dropdown fields with "dropdown_options" contain nested "children" that define parent-child relationships
    - Walk through "dropdown_options" → "children" → "options" recursively through ALL branches
    - Do NOT stop at the first match — check every branch

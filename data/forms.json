@@ -1,22 +1,11 @@
 [
 
-  {
-  "form_id": "dynamodb_table_creation_form",
-  "title": "DynamoDB Table Creation Form",
-  "system_prompt": "ABOUT THIS FORM: DynamoDB table creation form to capture required configuration for provisioning a table.\n\nFIELD GUIDE:\n- vendor: Cloud provider (default AWS)\n- geo_location: Deployment region grouping\n- product: Internal product using the table\n- environment: Deployment environment\n- table_name: Must follow AWS DynamoDB naming rules (3-255 chars, alphanumeric, _, -, .)\n- partition_key: Primary key attribute name\n- partition_key_type: DynamoDB attribute type (S, N, B)\n\nFUZZY MATCHING RULES:\n1. VENDOR: 'aws', 'amazon', 'amazon web services' → 'AWS'\n2. GEO: Case-insensitive matching — 'canada', 'london', 'mumbai', 'north america'\n3. PRODUCT: 'falcon', 'core' → normalize casing\n4. ENVIRONMENT: 'dev', 'stage', 'qa', 'prod' → normalize casing\n5. KEY TYPE: 'string'→'S', 'number'→'N', 'binary'→'B'\n6. MIXED INPUT: Extract multiple values — 'aws mumbai falcon prod users_table id string'\n7. SOFT CORRECTION: Fix casing but never invent values\n\nEXAMPLES:\n- Input: 'aws mumbai falcon prod users id string' → {\"vendor\":\"AWS\",\"geo_location\":\"Mumbai\",\"product\":\"Falcon\",\"environment\":\"Prod\",\"table_name\":\"users\",\"partition_key\":\"id\",\"partition_key_type\":\"S\"}\n- Input: 'core qa canada orders_table orderId number' → {\"product\":\"Core\",\"environment\":\"QA\",\"geo_location\":\"Canada\",\"table_name\":\"orders_table\",\"partition_key\":\"orderId\",\"partition_key_type\":\"N\"}\n\nTONE: Professional cloud infrastructure assistant.",
+{
+  "form_id": "dynamodb_table_creation",
+  "title": "DynamoDB Table Creation",
+  "system_prompt": "ABOUT THIS FORM: DynamoDB table creation form to capture required configuration for provisioning a table.\n\nFIELD GUIDE:\n- vendor: Cloud provider (default AWS)\n- geo_location: Deployment region grouping\n- product: Internal product using the table (filtered by geo_location)\n- environment: Deployment environment (filtered by geo_location + product)\n- table_name: Must follow AWS DynamoDB naming rules (3-255 chars, alphanumeric, _, -, .)\n- partition_key: Primary key attribute name\n- partition_key_type: DynamoDB attribute type (S, N, B)\n\nLOCATION HIERARCHY: geo_location → product → environment (each level narrows the next)\nNot all products are available in every region. Not all environments are available for every product+region combo.\nExample: Falcon in London/Canada has NO environments. Falcon in Mumbai only has Stage.\n\nFUZZY MATCHING RULES:\n1. VENDOR: 'aws', 'amazon', 'amazon web services' → 'AWS'\n2. GEO: Case-insensitive matching — 'canada', 'london', 'mumbai'\n3. PRODUCT: 'falcon', 'core' → normalize casing\n4. ENVIRONMENT: 'dev', 'stage', 'qa', 'prod' → normalize casing\n5. KEY TYPE: 'string'→'S', 'number'→'N', 'binary'→'B'\n6. MIXED INPUT: Extract multiple values — 'aws mumbai falcon stage users_table id string'\n7. SOFT CORRECTION: Fix casing but never invent values\n8. HIERARCHY VALIDATION: After extracting values, verify the combination exists in the hierarchy tree. If invalid, inform the user which options ARE available for their selection.\n\nEXAMPLES:\n- Input: 'aws mumbai falcon stage users id string' → {\"vendor\":\"AWS\",\"geo_location\":\"Mumbai\",\"product\":\"Falcon\",\"environment\":\"Stage\",\"table_name\":\"users\",\"partition_key\":\"id\",\"partition_key_type\":\"S\"}\n- Input: 'core qa mumbai orders_table orderId number' → {\"product\":\"Core\",\"environment\":\"QA\",\"geo_location\":\"Mumbai\",\"table_name\":\"orders_table\",\"partition_key\":\"orderId\",\"partition_key_type\":\"N\"}\n- Input: 'falcon qa canada' → INVALID: Falcon has no environments in Canada. Available for Falcon: Mumbai (Stage only).\n- Input: 'falcon prod mumbai' → INVALID: Falcon in Mumbai only has Stage. Did you mean Stage?\n\nTONE: Professional cloud infrastructure assistant.",
   "fields": [
-    {
-      "field_id": "vendor",
-      "label": "Vendor / Provider",
-      "type": "dropdown",
-      "required": true,
-      "default": "AWS",
-      "dropdown_options": [
-        {
-          "value": "AWS"
-        }
-      ]
-    },
+
     {
       "field_id": "geo_location",
       "label": "Geo Location",
@@ -24,16 +13,68 @@
       "required": true,
       "dropdown_options": [
         {
-          "value": "Canada"
+          "value": "London",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
         },
         {
-          "value": "London"
+          "value": "Canada",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
         },
         {
-          "value": "Mumbai"
-        },
-        {
-          "value": "North America"
+          "value": "Mumbai",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Stage" },
+                    { "value": "QA" },
+                    { "value": "Prod" }
+                  ]
+                }
+              },
+              {
+                "value": "Falcon",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Stage" }
+                  ]
+                }
+              }
+            ]
+          }
         }
       ]
     },
@@ -42,34 +83,16 @@
       "label": "Product",
       "type": "dropdown",
       "required": true,
-      "dropdown_options": [
-        {
-          "value": "Falcon"
-        },
-        {
-          "value": "Core"
-        }
-      ]
+      "parent_field_id": "geo_location",
+      "dropdown_options": []
     },
     {
       "field_id": "environment",
       "label": "Environment",
       "type": "dropdown",
       "required": true,
-      "dropdown_options": [
-        {
-          "value": "Dev"
-        },
-        {
-          "value": "Stage"
-        },
-        {
-          "value": "QA"
-        },
-        {
-          "value": "Prod"
-        }
-      ]
+      "parent_field_id": "product",
+      "dropdown_options": []
     },
     {
       "field_id": "table_name",
@@ -97,20 +120,724 @@
       "type": "dropdown",
       "required": true,
       "dropdown_options": [
-        {
-          "value": "S",
-          "label": "String"
-        },
-        {
-          "value": "N",
-          "label": "Number"
-        },
-        {
-          "value": "B",
-          "label": "Binary"
-        }
+        { "value": "S", "label": "String" },
+        { "value": "N", "label": "Number" },
+        { "value": "B", "label": "Binary" }
       ]
     }
   ]
 }
+,
+
+{
+  "form_id": "kong_route_form",
+  "title": "Kong Gateway Route Creation",
+  "system_prompt": "This form collects configuration required to create a Kong Gateway route. Ensure all inputs follow the hierarchy: geo_location → product → environment.",
+
+  "fields": [
+    {
+      "field_id": "geo_location",
+      "label": "Geo Location",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "London",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Canada",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Mumbai",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Stage" },
+                    { "value": "QA" },
+                    { "value": "Prod" }
+                  ]
+                }
+              },
+              {
+                "value": "Falcon",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Stage" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "North America",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "field_id": "product",
+      "label": "Product",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "geo_location",
+      "dropdown_options": []
+    },
+    {
+      "field_id": "environment",
+      "label": "Environment",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "product",
+      "dropdown_options": []
+    },
+
+    {
+      "field_id": "method",
+      "label": "HTTP Method",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        { "value": "GET" },
+        { "value": "POST" },
+        { "value": "PUT" },
+        { "value": "PATCH" },
+        { "value": "DELETE" }
+      ]
+    },
+    {
+      "field_id": "route",
+      "label": "Route Path",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^\\/.*",
+        "regex_description": "Route must start with '/' (e.g. /users)"
+      }
+    },
+    {
+      "field_id": "service_name",
+      "label": "Service Name",
+      "type": "text",
+      "required": true
+    }
+  ]
+}
+
+,
+
+{
+  "form_id": "s3_bucket_creation_form",
+  "title": "S3 Bucket Creation",
+  "system_prompt": "This form collects required details to create an AWS S3 bucket. Follow hierarchy: geo_location → product → environment. Ensure valid configuration for versioning and replication.",
+
+  "fields": [
+    {
+      "field_id": "vendor",
+      "label": "Vendor / Provider",
+      "type": "dropdown",
+      "required": true,
+      "default": "AWS",
+      "dropdown_options": [
+        { "value": "AWS" }
+      ]
+    },
+
+    {
+      "field_id": "geo_location",
+      "label": "Geo Location",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "London",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Canada",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Mumbai",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Stage" },
+                    { "value": "QA" },
+                    { "value": "Prod" }
+                  ]
+                }
+              },
+              {
+                "value": "Falcon",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Stage" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "North America",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "field_id": "product",
+      "label": "Product",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "geo_location",
+      "dropdown_options": []
+    },
+    {
+      "field_id": "environment",
+      "label": "Environment",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "product",
+      "dropdown_options": []
+    },
+
+    {
+      "field_id": "bucket_name",
+      "label": "Bucket Name",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^[a-z0-9.-]{3,63}$",
+        "regex_description": "3-63 characters, lowercase letters, numbers, dots, and hyphens only"
+      }
+    },
+
+    {
+      "field_id": "versioning",
+      "label": "Enable Versioning",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        { "value": "true" },
+        { "value": "false" }
+      ]
+    },
+
+    {
+      "field_id": "replication",
+      "label": "Enable S3 Replication",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        { "value": "true" },
+        { "value": "false" }
+      ]
+    },
+
+    {
+      "field_id": "cross_account_id",
+      "label": "Cross Account ID",
+      "type": "text",
+      "required": false,
+      "active": false,
+      "conditional_rules": [
+        {
+          "if": {
+            "field": "replication",
+            "operator": "equals",
+            "value": "true"
+          },
+          "then": {
+            "active": true,
+            "required": true
+          }
+        }
+      ],
+      "validation_rules": {
+        "regex": "^[0-9]{12}$",
+        "regex_description": "Must be a valid 12-digit AWS Account ID"
+      }
+    }
+  ]
+}
+
+,
+
+{
+  "form_id": "sqs_queue_creation_form",
+  "title": "SQS Queue Creation",
+  "system_prompt": "This form collects required details to create an AWS SQS queue. Follow hierarchy: geo_location → product → environment. Ensure FIFO, DLQ, and related constraints are valid.",
+
+  "fields": [
+
+    {
+      "field_id": "geo_location",
+      "label": "Geo Location",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "London",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Canada",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Mumbai",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Stage" },
+                    { "value": "QA" },
+                    { "value": "Prod" }
+                  ]
+                }
+              },
+              {
+                "value": "Falcon",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Stage" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "North America",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "field_id": "product",
+      "label": "Product",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "geo_location",
+      "dropdown_options": []
+    },
+    {
+      "field_id": "environment",
+      "label": "Environment",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "product",
+      "dropdown_options": []
+    },
+
+    {
+      "field_id": "queue_name",
+      "label": "Queue Name",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^[a-zA-Z0-9_-]{1,80}(\\.fifo)?$",
+        "regex_description": "1-80 chars, alphanumeric, hyphen, underscore. FIFO queues must end with .fifo"
+      }
+    },
+
+    {
+      "field_id": "fifo",
+      "label": "FIFO Queue",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        { "value": "true" },
+        { "value": "false" }
+      ]
+    },
+
+    {
+      "field_id": "dlq",
+      "label": "Enable Dead Letter Queue (DLQ)",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        { "value": "true" },
+        { "value": "false" }
+      ]
+    },
+
+    {
+      "field_id": "max_receive_count",
+      "label": "Max Receive Count",
+      "type": "number",
+      "required": false,
+      "active": false,
+      "conditional_rules": [
+        {
+          "if": {
+            "field": "dlq",
+            "operator": "equals",
+            "value": "true"
+          },
+          "then": {
+            "active": true,
+            "required": true
+          }
+        }
+      ]
+    },
+
+    {
+      "field_id": "visibility_timeout",
+      "label": "Visibility Timeout (seconds)",
+      "type": "number",
+      "required": false,
+      "validation_rules": {
+        "min": 0,
+        "max": 43200
+      }
+    },
+
+    {
+      "field_id": "main_retention",
+      "label": "Main Queue Retention (seconds)",
+      "type": "number",
+      "required": false,
+      "validation_rules": {
+        "min": 60,
+        "max": 1209600
+      }
+    },
+
+    {
+      "field_id": "dlq_retention",
+      "label": "DLQ Retention (seconds)",
+      "type": "number",
+      "required": false,
+      "active": false,
+      "conditional_rules": [
+        {
+          "if": {
+            "field": "dlq",
+            "operator": "equals",
+            "value": "true"
+          },
+          "then": {
+            "active": true
+          }
+        }
+      ],
+      "validation_rules": {
+        "min": 60,
+        "max": 1209600
+      }
+    },
+
+    {
+      "field_id": "cross_account_ids",
+      "label": "Cross Access Account IDs",
+      "type": "text",
+      "required": false,
+      "validation_rules": {
+        "regex": "^([0-9]{12})(,[0-9]{12})*$",
+        "regex_description": "Comma-separated 12-digit AWS account IDs"
+      }
+    }
+  ]
+}
+
+,
+
+{
+  "form_id": "database_creation_form",
+  "title": "Database Creation",
+  "system_prompt": "This form collects required details to create a database. Follow hierarchy: geo_location → product → environment. Ensure naming conventions are valid.",
+
+  "fields": [
+    {
+      "field_id": "vendor",
+      "label": "Vendor / Provider",
+      "type": "dropdown",
+      "required": true,
+      "default": "AWS",
+      "dropdown_options": [
+        { "value": "AWS" }
+      ]
+    },
+
+    {
+      "field_id": "geo_location",
+      "label": "Geo Location",
+      "type": "dropdown",
+      "required": true,
+      "dropdown_options": [
+        {
+          "value": "London",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Canada",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "Mumbai",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Dev" },
+                    { "value": "Stage" },
+                    { "value": "QA" },
+                    { "value": "Prod" }
+                  ]
+                }
+              },
+              {
+                "value": "Falcon",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Stage" }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "value": "North America",
+          "children": {
+            "field_id": "product",
+            "options": [
+              {
+                "value": "Core",
+                "children": {
+                  "field_id": "environment",
+                  "options": [
+                    { "value": "Prod" }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "field_id": "product",
+      "label": "Product",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "geo_location",
+      "dropdown_options": []
+    },
+    {
+      "field_id": "environment",
+      "label": "Environment",
+      "type": "dropdown",
+      "required": true,
+      "parent_field_id": "product",
+      "dropdown_options": []
+    },
+
+    {
+      "field_id": "server_name",
+      "label": "Server Name",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^[a-zA-Z0-9-]{3,63}$",
+        "regex_description": "3-63 characters, alphanumeric and hyphens only"
+      }
+    },
+
+    {
+      "field_id": "database_name",
+      "label": "Database Name",
+      "type": "text",
+      "required": true,
+      "validation_rules": {
+        "regex": "^[a-zA-Z0-9_]{1,63}$",
+        "regex_description": "1-63 characters, alphanumeric and underscores only"
+      }
+    }
+  ]
+}
+
+
 ]
