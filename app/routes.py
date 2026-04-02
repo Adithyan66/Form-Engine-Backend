@@ -11,7 +11,7 @@ from app.validation import (
     get_currently_asking,
     get_suggestions,
 )
-from app.llm import call_openai_next_question
+from app.llm import call_openai_next_question, call_openai_detect_form
 from app.graph import form_graph
 
 router = APIRouter()
@@ -97,8 +97,52 @@ def reset():
 def chat(req: ChatRequest):
     # Load persisted state
     form = read_json("active_form.json", user_id=WEB_USER)
+
+    # No active form — detect form selection from chat message
     if not form:
-        raise HTTPException(status_code=400, detail="No active form. Select a form first.")
+        forms = read_json("forms.json")
+        detected_form_id = call_openai_detect_form(req.message, forms)
+
+        if detected_form_id:
+            form = next((f for f in forms if f["form_id"] == detected_form_id), None)
+
+        if not form:
+            # Could not detect — list available forms
+            form_list = ", ".join(f'"{f["title"]}"' for f in forms)
+            return {
+                "status": "no_form",
+                "message": f"I'd be happy to help! We have these forms available: {form_list}. Which one would you like to fill out?",
+                "collected_data": {},
+                "missing_fields": [],
+                "invalid_fields": [],
+                "suggestions": [],
+            }
+
+        # Initialize the detected form (same as /select-form)
+        write_json("active_form.json", form, user_id=WEB_USER)
+        write_json("collected_data.json", {}, user_id=WEB_USER)
+        write_json("messages.json", [], user_id=WEB_USER)
+
+        missing = get_missing_fields(form, {})
+        question = call_openai_next_question(form, {}, missing)
+
+        first_asking, _ = get_currently_asking(form, {})
+        _save_currently_asking(form, {}, user_id=WEB_USER)
+
+        messages = [
+            {"role": "user", "content": req.message},
+            {"role": "assistant", "content": question},
+        ]
+        write_json("messages.json", messages, user_id=WEB_USER)
+
+        return {
+            "status": "pending",
+            "message": question,
+            "collected_data": {},
+            "missing_fields": missing,
+            "invalid_fields": [],
+            "suggestions": get_suggestions(form, {}, missing, currently_asking=first_asking),
+        }
 
     collected_data = read_json("collected_data.json", user_id=WEB_USER)
     messages = read_json("messages.json", user_id=WEB_USER)

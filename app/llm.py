@@ -575,6 +575,53 @@ Return ONLY the message text."""
     return response.choices[0].message.content.strip()
 
 
+# === Form Detection ===
+
+def call_openai_detect_form(user_message, forms):
+    """Detect which form the user wants to fill based on their message.
+    Returns the form_id if detected, None otherwise.
+    """
+    print(f"    [llm] call_openai_detect_form")
+    print(f"    [llm]   user_message: {user_message!r}")
+
+    forms_list = "\n".join(
+        f'- form_id: "{f["form_id"]}", title: "{f["title"]}"'
+        for f in forms
+    )
+
+    system_prompt = f"""You are a form selection assistant. Based on the user's message, determine which form they want to fill out.
+
+Available forms:
+{forms_list}
+
+RULES:
+1. Match the user's INTENT to the most relevant form
+2. Be flexible with phrasing — "create a dynamodb", "dynamodb table", "new table" → dynamodb form
+3. "open account", "bank account", "new account" → bank form
+4. Return ONLY a JSON object with one key: "form_id"
+5. If the user's message matches a form, return {{"form_id": "<matched_form_id>"}}
+6. If NO form matches or the message is ambiguous, return {{"form_id": null}}
+7. Be generous with matching — if the user mentions anything related to a form's domain, match it
+
+Return ONLY a JSON object. No explanation."""
+
+    response = _get_client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+
+    try:
+        result = json.loads(response.choices[0].message.content)
+        return result.get("form_id")
+    except json.JSONDecodeError:
+        return None
+
+
 # === Query Answer ===
 
 def call_openai_answer_query(query, form, collected_data):
